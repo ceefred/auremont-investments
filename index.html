@@ -58,4 +58,107 @@ function selected(){return state.tx.find(t=>t.id===document.getElementById('sele
   );
 
   console.log("AUREMONT Supabase client initialized.");
+  </script>
+
+<script>
+const sb = window.auremontSupabase;
+
+const authPanel = document.getElementById("authPanel");
+const appPanel = document.querySelector(".app");
+const authMessage = document.getElementById("authMessage");
+
+function showAuthMessage(message, isError = false) {
+  authMessage.textContent = message;
+  authMessage.style.color = isError ? "#c62828" : "#18733b";
+}
+
+document.getElementById("signupBtn").addEventListener("click", async () => {
+  const fullName = document.getElementById("fullName").value.trim();
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+
+  if (!fullName || !email || !password) {
+    showAuthMessage("Please fill in your full name, email, and password.", true);
+    return;
+  }
+
+  if (password.length < 6) {
+    showAuthMessage("Your password must be at least 6 characters.", true);
+    return;
+  }
+
+  showAuthMessage("Creating your account...");
+
+  const { data, error } = await sb.auth.signUp({
+    email,
+    password,
+    options: {
+      data: { full_name: fullName }
+    }
+  });
+
+  if (error) {
+    showAuthMessage(error.message, true);
+    return;
+  }
+
+  if (data.session) {
+    showAuthMessage("Account created successfully!");
+  } else {
+    showAuthMessage("Account created! Check your email to confirm your account before signing in.");
+  }
+});
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+
+  if (!email || !password) {
+    showAuthMessage("Enter your email and password.", true);
+    return;
+  }
+
+  showAuthMessage("Signing in...");
+
+  const { error } = await sb.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    showAuthMessage(error.message, true);
+  }
+});
+
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  const { error } = await sb.auth.signOut();
+
+  if (error) {
+    showAuthMessage(error.message, true);
+  }
+});
+
+async function updateAuthScreen() {
+  const { data, error } = await sb.auth.getSession();
+
+  if (error) {
+    showAuthMessage(error.message, true);
+    return;
+  }
+
+  const loggedIn = Boolean(data.session);
+
+  authPanel.style.display = loggedIn ? "none" : "block";
+  appPanel.style.display = loggedIn ? "block" : "none";
+
+  document.getElementById("logoutBtn").style.display =
+    loggedIn ? "block" : "none";
+}
+
+sb.auth.onAuthStateChange(() => {
+  updateAuthScreen();
+});
+
+updateAuthScreen();
+</script>
 </script></body></html>
